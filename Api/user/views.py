@@ -54,9 +54,12 @@ class Login(APIView):
             
             data = {
                 'user': user_dict,
-                'access': access,
-                'refresh': refresh,
-                'is_login': True
-            }
-            return Response(data , status=status.HTTP_200_OK)
+                'token': {
+                        'access': access,
+                        'refresh': refresh,
+                    }
+                }
+            
+            return Response(data=data,status=status.HTTP_200_OK)
+        
         return JsonResponse(serializer.errors)
