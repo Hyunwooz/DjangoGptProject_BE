@@ -3,12 +3,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, LoginSerializer
-# from .forms import LoginForm
 
 User = get_user_model()
 
@@ -17,7 +13,7 @@ class Join(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.POST)
 
-        if serializer.is_valid(raise_exception=False):
+        if serializer.is_valid():
             user = serializer.save(request)
 
             token = RefreshToken.for_user(user)
@@ -35,22 +31,23 @@ class Join(APIView):
             
             return Response(data,status=status.HTTP_201_CREATED)
         
-        return Response(serializer.error_messages,status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.error_messages,status=status.HTTP_201_CREATED)
+
 
 class Login(APIView):
 
     def post(self, request):
-        serializer = LoginSerializer(data=request.POST)
         
-        # print(serializer.validate(data=request.POST))
+        serializer = LoginSerializer(data={
+            'email': request.POST["email"],
+            'password': request.POST["password"]
+        })
         
-        if serializer.validate(data=request.POST):
+        if serializer.is_valid():
             
-            passData = serializer.validate(data=request.POST)
-            
-            user = passData['user']
-            access = passData['access']
-            refresh = passData['refresh']
+            user = serializer.validated_data['user']
+            access = serializer.validated_data['access']
+            refresh = serializer.validated_data['refresh']
             
             user_dict  = user.__dict__
             user_dict['_state'] = user_dict['_state'].__dict__
@@ -58,9 +55,8 @@ class Login(APIView):
             data = {
                 'user': user_dict,
                 'access': access,
-                'refresh': refresh
+                'refresh': refresh,
+                'is_login': True
             }
-            
             return Response(data , status=status.HTTP_200_OK)
-        
-        return Response(serializer.error_messages , status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse(serializer.errors)

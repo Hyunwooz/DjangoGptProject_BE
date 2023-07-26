@@ -30,8 +30,7 @@ SECRET_KEY = 'django-insecure-d%^d75$)x306!a2=a$tixjdx#!kh1ug#1$f08&kc4--)0a1+bu
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -42,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
 	'rest_framework_simplejwt.token_blacklist',
@@ -50,6 +50,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -83,6 +84,11 @@ REST_FRAMEWORK = {
     ),
 }
 
+
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:5500",
+]
+
 REST_USE_JWT = True
 
 SIMPLE_JWT = {
@@ -94,7 +100,6 @@ SIMPLE_JWT = {
 }
 
 WSGI_APPLICATION = 'Api.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
