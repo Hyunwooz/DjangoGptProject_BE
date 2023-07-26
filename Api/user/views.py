@@ -31,7 +31,7 @@ class Join(APIView):
             
             return Response(data,status=status.HTTP_201_CREATED)
         
-        return Response(serializer.error_messages,status=status.HTTP_201_CREATED)
+        return JsonResponse(serializer.errors)
 
 
 class Login(APIView):
