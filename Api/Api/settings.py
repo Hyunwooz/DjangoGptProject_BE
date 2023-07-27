@@ -82,8 +82,14 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'contact': '1000/day',
+        'chatbot': '5/day',
+    },
 }
-
 
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5500",
