@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import Profile
+from .models import Profile as PF_Model
 from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, LoginSerializer
 
@@ -44,10 +44,14 @@ class Login(APIView):
             
             user_dict  = user.__dict__
             user_dict['_state'] = user_dict['_state'].__dict__
+            user_dict['password'] = "Secret"
             
-            profile = Profile.objects.get(user=user)
+            profile = PF_Model.objects.get(user=user)
             profile_dict = profile.__dict__
             profile_dict['_state'] = profile_dict['_state'].__dict__
+            
+            if profile_dict['avatarUrl'] != 'none':
+                profile_dict['avatarUrl'] = 'http://127.0.0.1:8000/media/' + profile_dict['avatarUrl']
             
             data = {
                 'user': {
@@ -63,3 +67,42 @@ class Login(APIView):
             return Response(data=data,status=status.HTTP_200_OK)
         
         return JsonResponse(serializer.errors)
+    
+
+class Profile(APIView):
+
+    def post(self, request):
+        
+        user = request.user
+        profile = PF_Model.objects.get(user=user)
+        name = request.POST['name']
+        aboutMe = request.POST['aboutMe']
+        
+        try:
+            avatarUrl = request.FILES['avatarUrl']
+        except:
+            profile.name = name
+            profile.aboutMe = aboutMe
+            is_avatar = False
+        else:
+            profile.name = name
+            profile.avatarUrl = avatarUrl
+            profile.aboutMe = aboutMe
+            is_avatar = True
+        
+        profile.save()
+        
+        profile_dict = profile.__dict__
+        profile_dict['_state'] = profile_dict['_state'].__dict__
+        
+        if not is_avatar:
+            profile_dict['avatarUrl'] = 'none'
+        else:
+            profile_dict['avatarUrl'] = 'http://127.0.0.1:8000/media/' + profile_dict['avatarUrl']
+        
+        data = {
+            "message": 'success',
+            "profile": profile_dict
+        }
+        
+        return JsonResponse(data)
