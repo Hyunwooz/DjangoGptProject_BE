@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
+from .models import Profile
 from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, LoginSerializer
 
@@ -15,7 +16,8 @@ class Join(APIView):
 
         if serializer.is_valid():
             user = serializer.save(request)
-
+            profile = Profile.objects.create(user=user)
+            
             token = RefreshToken.for_user(user)
             refresh = str(token)
             access = str(token.access_token)
