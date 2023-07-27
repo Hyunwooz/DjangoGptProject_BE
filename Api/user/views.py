@@ -10,13 +10,13 @@ from .serializers import UserSerializer, LoginSerializer
 User = get_user_model()
 
 class Join(APIView):
-
+    throttle_scope = 'contact'
     def post(self, request):
         serializer = UserSerializer(data=request.POST)
 
         if serializer.is_valid():
             user = serializer.save(request)
-            profile = Profile.objects.create(user=user)
+            profile = Profile.objects.create(user=user,avtarUrl='none')
             
             data = {
                 'message': '회원가입을 축하합니다.'
@@ -28,7 +28,8 @@ class Join(APIView):
 
 
 class Login(APIView):
-
+    throttle_scope = 'contact'
+    
     def post(self, request):
         
         serializer = LoginSerializer(data={
@@ -70,7 +71,8 @@ class Login(APIView):
     
 
 class Profile(APIView):
-
+    throttle_scope = 'contact'
+    
     def post(self, request):
         
         user = request.user
@@ -83,22 +85,18 @@ class Profile(APIView):
         except:
             profile.name = name
             profile.aboutMe = aboutMe
-            is_avatar = False
         else:
             profile.name = name
             profile.avatarUrl = avatarUrl
             profile.aboutMe = aboutMe
-            is_avatar = True
         
         profile.save()
         
         profile_dict = profile.__dict__
         profile_dict['_state'] = profile_dict['_state'].__dict__
-        
-        if not is_avatar:
-            profile_dict['avatarUrl'] = 'none'
-        else:
-            profile_dict['avatarUrl'] = 'http://127.0.0.1:8000/media/' + profile_dict['avatarUrl']
+      
+        if profile_dict['avatarUrl'] != 'none':
+            profile_dict['avatarUrl'] = 'http://127.0.0.1:8000/media/' + str(profile_dict['avatarUrl'])
         
         data = {
             "message": 'success',

@@ -87,7 +87,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'contact': '1000/day',
-        'chatbot': '5/day',
+        'chatbot': '2/day',
     },
 }
 
