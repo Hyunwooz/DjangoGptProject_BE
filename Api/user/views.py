@@ -18,17 +18,8 @@ class Join(APIView):
             user = serializer.save(request)
             profile = Profile.objects.create(user=user)
             
-            token = RefreshToken.for_user(user)
-            refresh = str(token)
-            access = str(token.access_token)
-            
-            user_dict  = user.__dict__
-            user_dict['_state'] = user_dict['_state'].__dict__
-            
             data = {
-                'user': user_dict,
-                'access': access,
-                'refresh': refresh 
+                'message': '회원가입을 축하합니다.'
             }
             
             return Response(data,status=status.HTTP_201_CREATED)
@@ -54,8 +45,15 @@ class Login(APIView):
             user_dict  = user.__dict__
             user_dict['_state'] = user_dict['_state'].__dict__
             
+            profile = Profile.objects.get(user=user)
+            profile_dict = profile.__dict__
+            profile_dict['_state'] = profile_dict['_state'].__dict__
+            
             data = {
-                'user': user_dict,
+                'user': {
+                    'account': user_dict,
+                    'profile': profile_dict
+                    },
                 'token': {
                         'access': access,
                         'refresh': refresh,
