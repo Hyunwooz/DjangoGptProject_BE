@@ -54,7 +54,7 @@ class Chat(APIView):
 class MyChatList(APIView):
     def post(self, request):
         user = User.objects.get(email=request.user)
-        anwsers = list(Answer.objects.filter(writer=user).order_by('-').values())
+        anwsers = list(Answer.objects.filter(writer=user).order_by('-created_at').values())
         
         datas = {
             "data": anwsers
