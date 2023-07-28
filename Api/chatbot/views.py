@@ -32,6 +32,7 @@ class Chat(APIView):
         
         anwser = Answer.objects.create(
             question=question,
+            writer=user,
             title=gpt_anwser["ad_title"],
             description=gpt_anwser["ad_description"],
             main_keyword=gpt_anwser["ad_Main_keyword"],
@@ -52,9 +53,10 @@ class Chat(APIView):
 
 class MyChatList(APIView):
     def post(self, request):
-        
         user = User.objects.get(email=request.user)
-        questions = Question.objects.filter(writer=user)
-        print(questions.__dict__)
+        anwsers = list(Answer.objects.filter(writer=user).order_by('-').values())
         
-        return JsonResponse({"message":"Success"})
+        datas = {
+            "data": anwsers
+        }
+        return JsonResponse(datas)

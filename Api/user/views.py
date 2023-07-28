@@ -16,7 +16,7 @@ class Join(APIView):
 
         if serializer.is_valid():
             user = serializer.save(request)
-            profile = Profile.objects.create(user=user,avtarUrl='none')
+            profile = PF_Model.objects.create(user=user,avatarUrl='none')
             
             data = {
                 'message': '회원가입을 축하합니다.'

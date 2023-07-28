@@ -12,10 +12,10 @@ class Question(models.Model):
     is_public = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Answer(models.Model):
+    writer = models.ForeignKey(User, on_delete=models.CASCADE)
     question = models.OneToOneField('Question',on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -23,6 +23,8 @@ class Answer(models.Model):
     recommand_keyword = models.TextField()
     type = models.TextField()
     category = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Comment(models.Model):
