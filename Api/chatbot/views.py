@@ -1,5 +1,6 @@
 from django.http import JsonResponse 
 from rest_framework.views import APIView
+import requests
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
@@ -17,18 +18,18 @@ class Chat(APIView):
         req_data = json.loads(request.data)
         question = Question.objects.create(writer=user,content=req_data)
         
-        prompt.append(req_data)
-        ## conncet gpt api start
-        ## end
-        
-        gpt_anwser = {
-            "ad_title": "여자를 위한 제주도 자전거 여행",
-            "ad_description": "아름다운 제주도의 자연을 만끽하며 자전거를 타는 특별한 경험을 느껴보세요. 친구, 가족, 연인과 함께 즐기는 잊지 못할 추억, 제주도의 다양한 문화와 역사를 배울 수 있는 기회입니다.",
-            "ad_Main_keyword": "제주도 자전거 여행",
-            "ad_keyword": "여행, 자전거 여행, 자전거 렌트",
-            "ad_type": "검색",
-            "ad_category": "여행",
+        questions = {
+            "role": "user",
+            "content": request.data,
         }
+        
+        prompt.append(questions)
+        ## conncet gpt api start
+        response = requests.post('https://estsoft-openai-api.jejucodingcamp.workers.dev/', json=prompt)
+        anwser = response.json()['choices'][0]['message']['content']
+        ## end
+        remake = anwser.replace("'",'"')
+        gpt_anwser = json.loads(remake)
         
         anwser = Answer.objects.create(
             question=question,
@@ -58,5 +59,32 @@ class MyChatList(APIView):
         
         datas = {
             "data": anwsers
+        }
+        return JsonResponse(datas)
+    
+
+class ChatDetail(APIView):
+    def post(self, request):
+            
+        anwser = Answer.objects.get(id=request.data)
+        qeustion = anwser.question
+        writer = anwser.writer
+        profile = writer.profile
+        
+        r_answer = anwser.__dict__
+        r_answer['_state'] = ''
+        r_qeustion = qeustion.__dict__
+        r_qeustion['_state'] = ''
+        r_writer = writer.__dict__
+        r_writer['_state'] = ''
+        r_writer['password'] = 'sercret'
+        r_profile = profile.__dict__
+        r_profile['_state'] = ''
+        
+        datas = {
+            "anwser": r_answer,
+            "qeustion": r_qeustion,
+            "writer": r_writer,
+            "profile": r_profile
         }
         return JsonResponse(datas)

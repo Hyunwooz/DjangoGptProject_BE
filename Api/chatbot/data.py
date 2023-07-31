@@ -1,3 +1,5 @@
+import json
+
 # 질문과 답변 저장
 data = [
     {
@@ -84,14 +86,14 @@ data = [
     },
     {
         "role": "assistant",
-        "content": {
+        "content": str({
             "ad_title": "광고 제목",
             "ad_description": "설명",
             "ad_Main_keyword": "메인 키워드",
             "ad_keyword": "추천 키워드1, 추천 키워드2, 추천 키워드3",
             "ad_type": "광고 유형",
             "ad_category": "카테고리",
-        },
+        }),
     },
     {
         "role": "user",
@@ -100,30 +102,52 @@ data = [
     },
     {
         "role": "user",
-        "content":{
+        "content":str({
             "광고 목표": "판매",
             "광고 유형": "검색",
             "카테고리": "여행",
             "메인 키워드": "제주도 자전거 여행",
             "연령대": "18세~24세",
             "성별": "여자",
-        },
+        }),
     },
     {
         "role": "assistant",
-        "content": {
+        "content": str({
             "ad_title": "여자를 위한 제주도 자전거 여행",
             "ad_description": "아름다운 제주도의 자연을 만끽하며 자전거를 타는 특별한 경험을 느껴보세요. 친구, 가족, 연인과 함께 즐기는 잊지 못할 추억, 제주도의 다양한 문화와 역사를 배울 수 있는 기회입니다.",
             "ad_Main_keyword": "제주도 자전거 여행",
             "ad_keyword": "여행, 자전거 여행, 자전거 렌트",
             "ad_type": "검색",
             "ad_category": "여행",
-        },
+        }),
+    },
+    {
+        "role": "user",
+        "content":str({
+            "광고 목표": "판매",
+            "광고 유형": "검색",
+            "카테고리": "여행",
+            "메인 키워드": "제주도 자전거 여행",
+            "연령대": "13세 이하",
+            "성별": "남자",
+        }),
+    },
+    {
+        "role": "assistant",
+        "content": str({
+            "ad_title": "액션가득! 제주도 킥보드 여행으로 재밌는 여름을 만끽해보세요!",
+            "ad_description": "제주도 자전거 여행으로 행복한 순간을 만나보세요! 지금 예약하고 특별 혜택을 놓치지 마세요!",
+            "ad_Main_keyword": "제주도 자전거 여행",
+            "ad_keyword": "여행, 가족 여행 제주도, 자전거 렌트",
+            "ad_type": "검색",
+            "ad_category": "여행",
+        }),
     },
     {
         "role": "user",
         "content":
-            "무조건 위와 같은 형식으로 답변해줘, 위의 형식을 벗어나면 안돼",
+            "무조건 위와 같은 형식으로 답변해줘",
     },
     {
         "role": "user",
