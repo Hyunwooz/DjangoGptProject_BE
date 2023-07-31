@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from .data import data as prompt
-from .models import Question, Answer
+from .models import Answer
 import json
 
 # from .serializers import UserSerializer, LoginSerializer
@@ -16,7 +16,7 @@ class Chat(APIView):
     def post(self, request):
         user = User.objects.get(email=request.user)
         req_data = json.loads(request.data)
-        question = Question.objects.create(writer=user,content=req_data)
+
         
         questions = {
             "role": "user",
@@ -24,25 +24,26 @@ class Chat(APIView):
         }
         
         prompt.append(questions)
+        
         ## conncet gpt api start
         response = requests.post('https://estsoft-openai-api.jejucodingcamp.workers.dev/', json=prompt)
-        anwser = response.json()['choices'][0]['message']['content']
+        ai_anwser = response.json()['choices'][0]['message']['content']
         ## end
-        remake = anwser.replace("'",'"')
-        gpt_anwser = json.loads(remake)
         
-        anwser = Answer.objects.create(
-            question=question,
+        remake = ai_anwser.replace("'",'"')
+        gpt_anwser = json.loads(remake)
+
+        answer = Answer.objects.create(
             writer=user,
             title=gpt_anwser["ad_title"],
             description=gpt_anwser["ad_description"],
             main_keyword=gpt_anwser["ad_Main_keyword"],
             recommand_keyword=gpt_anwser["ad_keyword"],
+            category=gpt_anwser["ad_category"],
             type=gpt_anwser["ad_type"],
-            category=gpt_anwser["ad_category"]
-            )
+            question=req_data)
         
-        answer_dict = anwser.__dict__
+        answer_dict = answer.__dict__
         answer_dict['_state'] = ""
         
         data = {
@@ -55,7 +56,7 @@ class Chat(APIView):
 class MyChatList(APIView):
     def post(self, request):
         user = User.objects.get(email=request.user)
-        anwsers = list(Answer.objects.filter(writer=user).order_by('-created_at').values())
+        anwsers = list(Answer.objects.filter(writer=user,is_active=True).order_by('-created_at').values())
         
         datas = {
             "data": anwsers
@@ -67,14 +68,11 @@ class ChatDetail(APIView):
     def post(self, request):
             
         anwser = Answer.objects.get(id=request.data)
-        qeustion = anwser.question
         writer = anwser.writer
         profile = writer.profile
         
         r_answer = anwser.__dict__
         r_answer['_state'] = ''
-        r_qeustion = qeustion.__dict__
-        r_qeustion['_state'] = ''
         r_writer = writer.__dict__
         r_writer['_state'] = ''
         r_writer['password'] = 'sercret'
@@ -83,8 +81,42 @@ class ChatDetail(APIView):
         
         datas = {
             "anwser": r_answer,
-            "qeustion": r_qeustion,
             "writer": r_writer,
             "profile": r_profile
+        }
+        return JsonResponse(datas)
+
+class ChatDelete(APIView):
+    def post(self, request):
+        chat = Answer.objects.get(id=request.data)
+        chat.is_active = False
+        chat.save()
+        
+        datas = {
+            "message": "삭제되었습니다.",
+        }
+        return JsonResponse(datas)
+    
+
+class ChatPublic(APIView):
+    def post(self, request):
+        chat = Answer.objects.get(id=request.data)
+        chat.is_public = True
+        chat.save()
+        
+        datas = {
+            "message": "Public 설정 완료.",
+        }
+        return JsonResponse(datas)
+    
+    
+class ChatPrivate(APIView):
+    def post(self, request):
+        chat = Answer.objects.get(id=request.data)
+        chat.is_public = False
+        chat.save()
+        
+        datas = {
+            "message": "Private 설정 완료.",
         }
         return JsonResponse(datas)
