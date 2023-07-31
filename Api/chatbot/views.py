@@ -51,7 +51,30 @@ class Chat(APIView):
             }
         
         return JsonResponse(data)
-    
+
+
+class LoungeChatList(APIView):
+    def post(self, request):
+        anwsers = list(Answer.objects.all().filter(is_active=True,is_public=True).order_by('-created_at').values())
+        
+        profile_add = []
+        
+        for ans in anwsers[:-1]:
+            owner = User.objects.get(id=ans['writer_id'])
+            owner_profile = owner.profile
+            owner_dict = owner_profile.__dict__
+            owner_dict['_state'] = ''
+            ans['owner'] = owner_dict
+            profile_add.append(ans)
+            
+        recents = anwsers[:3]
+        
+        datas = {
+            "data": profile_add,
+            "recents": recents
+        }
+        return JsonResponse(datas)
+
 
 class MyChatList(APIView):
     def post(self, request):
@@ -68,6 +91,8 @@ class ChatDetail(APIView):
     def post(self, request):
             
         anwser = Answer.objects.get(id=request.data)
+        anwser.views = anwser.views + 1
+        anwser.save()
         writer = anwser.writer
         profile = writer.profile
         
