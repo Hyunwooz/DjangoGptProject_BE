@@ -55,4 +55,31 @@ class LoginSerializer(serializers.Serializer):
         
         raise serializers.ValidationError('이메일 또는 비밀번호를 확인해주세요.')
             
+
+class GithibLoginSerializer(serializers.Serializer):
+    
+    email = serializers.EmailField()
+    
+    def validate(self, data):
         
+        email = data.get('email', None)
+        user = User.objects.get(email=email)
+        
+        if user:
+            token = RefreshToken.for_user(user)
+            refresh = str(token)
+            access = str(token.access_token)
+
+            data = {
+                'user': user,
+                'refresh': refresh,
+                'access': access,
+            }
+
+            return data
+        
+        if User.objects.filter(email=email).exists():
+            user = User.objects.get(email=email)
+        else:
+            raise serializers.ValidationError("존재하지 않는 이메일 입니다.")
+        raise serializers.ValidationError('이메일 또는 비밀번호를 확인해주세요.')
