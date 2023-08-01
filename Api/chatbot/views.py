@@ -1,11 +1,10 @@
-from django.http import JsonResponse 
 from rest_framework.views import APIView
-import requests
-from rest_framework.response import Response
-from rest_framework import status
+from django.http import JsonResponse 
 from django.contrib.auth import get_user_model
+from django.db.models import Count
 from .data import data as prompt
-from .models import Answer
+from .models import Answer, Comment
+import requests
 import json
 
 # from .serializers import UserSerializer, LoginSerializer
@@ -55,11 +54,12 @@ class Chat(APIView):
 
 class LoungeChatList(APIView):
     def post(self, request):
-        anwsers = list(Answer.objects.all().filter(is_active=True,is_public=True).order_by('-created_at').values())
+        anwsers = list(Answer.objects.all().filter(is_active=True,is_public=True).order_by('created_at').values())
+        categories = list(Answer.objects.filter(is_active=True,is_public=True).values('category').annotate(count=Count('category')))
         
         profile_add = []
         
-        for ans in anwsers[:-1]:
+        for ans in anwsers:
             owner = User.objects.get(id=ans['writer_id'])
             owner_profile = owner.profile
             owner_dict = owner_profile.__dict__
@@ -71,7 +71,8 @@ class LoungeChatList(APIView):
         
         datas = {
             "data": profile_add,
-            "recents": recents
+            "recents": recents,
+            "categories": categories
         }
         return JsonResponse(datas)
 
@@ -93,6 +94,19 @@ class ChatDetail(APIView):
         anwser = Answer.objects.get(id=request.data)
         anwser.views = anwser.views + 1
         anwser.save()
+        
+        comments = list(Comment.objects.filter(chat=anwser,is_active=True).values())
+        r_comments = []
+        
+        for comment in comments:
+            owner = User.objects.get(id=comment['writer_id'])
+            owner_profile = owner.profile
+            owner_dict = owner_profile.__dict__
+            owner_dict['_state'] = ''
+            comment['owner'] = owner_dict
+            r_comments.append(comment)
+        
+        
         writer = anwser.writer
         profile = writer.profile
         
@@ -107,7 +121,8 @@ class ChatDetail(APIView):
         datas = {
             "anwser": r_answer,
             "writer": r_writer,
-            "profile": r_profile
+            "profile": r_profile,
+            "comments": r_comments
         }
         return JsonResponse(datas)
 
@@ -145,3 +160,82 @@ class ChatPrivate(APIView):
             "message": "Private 설정 완료.",
         }
         return JsonResponse(datas)
+    
+
+class CommentWrite(APIView):
+    def post(self, request):
+        
+        user = User.objects.get(email=request.user)
+        chat = Answer.objects.get(id=request.data['post_id'])
+        comment = Comment.objects.create(writer=user,content=request.data['comment'],chat=chat)
+        
+        datas = {
+            "message": "댓글 생성 완료",
+        }
+        return JsonResponse(datas)
+    
+
+class CommentDelete(APIView):
+    def post(self, request):
+        comment = Comment.objects.get(id=request.data)
+        comment.is_active = False
+        comment.save()
+        
+        datas = {
+            "message": "삭제되었습니다.",
+        }
+        return JsonResponse(datas)
+    
+    
+class Search(APIView):
+    def post(self, request):
+        
+        if request.data['type'] == 'category':
+            anwsers = list(Answer.objects.all().filter(category=request.data['search'],is_active=True,is_public=True).order_by('created_at').values())
+        elif request.data['type'] == 'title':
+            anwsers = list(Answer.objects.all().filter(title__contains=request.data['search'],is_active=True,is_public=True).order_by('created_at').values())
+
+        categories = list(Answer.objects.filter(is_active=True,is_public=True).values('category').annotate(count=Count('category')))
+        
+        profile_add = []
+        
+        for ans in anwsers:
+            owner = User.objects.get(id=ans['writer_id'])
+            owner_profile = owner.profile
+            owner_dict = owner_profile.__dict__
+            owner_dict['_state'] = ''
+            ans['owner'] = owner_dict
+            profile_add.append(ans)
+            
+        recents = anwsers[:3]
+        
+        datas = {
+            "data": profile_add,
+            "recents": recents,
+            "categories": categories
+        }
+        return JsonResponse(datas)
+    
+
+class Like(APIView):
+    def post(self, request):
+
+        chat = Answer.objects.get(id=request.data)
+        user = request.user.email
+        
+        try:
+            chat.like[user]
+        except:
+            chat.like[user] = 'like'
+        else:
+            if   chat.like[user] == 'like':
+                chat.like[user] = 'unlike'
+            else:
+                chat.like[user] = 'like'
+        
+        chat.save()
+        
+        data = {
+            'message': 'success'
+        }
+        return JsonResponse(data)
