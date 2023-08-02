@@ -184,8 +184,293 @@ Public과 Private 설정을 통해 공개하고 싶은 광고 카피만 공개�
 ``` 
 ## 6. 개발과정과 느낀점
 
-### Title
-#### Subtitle
+### Github Login
+
+우선 예전에 다른 프로젝트를 통해서 Github 소셜 로그인은 해본 경험이 있어서 해당 기능 개발 순서를 뒤쪽으로 계획하고 진행하였습니다.
+
+참고 블로그 : https://medium.com/chanjongs-programming-diary/django-rest-framework%EB%A1%9C-%EC%86%8C%EC%85%9C-%EB%A1%9C%EA%B7%B8%EC%9D%B8-api-%EA%B5%AC%ED%98%84%ED%95%B4%EB%B3%B4%EA%B8%B0-google-kakao-github-2-cf1b4059b5d5
+
+위의 블로그를 참고하여 개발을 진행하였습니다.
+
+앞서 말씀드린 것처럼 미리 경험이 있기에 개발 순서를 뒤로 밀었는데 좋은 판단이 아니였습니다.
+
+이번 프로젝트는 FE서버와 BE서버를 분리해서 개발하기에 제가 미리 경험했던 그떄와는 환경이 달라졌기 때문입니다.
+
+```
+def github_login(request):
+    return redirect(
+        f"https://github.com/login/oauth/authorize?client_id={client_id}&redirect_uri={GITHUB_CALLBACK_URI}"
+    )
+```
+해당 부분에서 return redirect를 사용할 수 없기에 오류가 일어났습니다.
+
+이를 해결하기 위해 FE 서버에서 접근하기로 결정했습니다.
+```
+const github_login = async (event) => {
+    ... 생략...
+    await fetch(url, {
+        method: "POST",
+        headers: {},
+    })
+    .then((res) => res.json())
+    .then((data) => {
+        if (data) {
+            location.href = data.url
+        } 
+    })
+}
+```
+![스크린샷 2023-08-02 155125](https://github.com/Hyunwooz/DjangoGptProject_BE/assets/107661525/b7c55175-17b0-44f7-93b9-0900aeebce9e)
+```
+class GithubLogin(APIView):
+    def post(self, request):
+        
+        data = {
+            'url': f"https://github.com/login/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={redirect_uri}"
+        }
+        return JsonResponse(data)
+```
+
+Url을 JsonResponse로 다시 FE서버로 보내준 후 FE서버에서 해당 URL을 GET 합니다.
+
+Callback URL은 FE서버의 로그인 페이지로 설정하였습니다.
+
+그 후 발급받은 Code를 다시 BE 서버로 전달해줍니다.
+
+```
+const github_login_func = async() => {
+    const urlParams = new URL(location.href).searchParams;
+    const code = urlParams.get('code');
+    const url = 'http://0.0.0.0/user/login/github/callback/'
+
+    if(code) {
+        await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({"code": code})
+        })
+        .then((res) => res.json())
+        ... 생략 ...
+    }
+}
+```
+
+code를 받은 BE 서버에서 access token을 발급받고 , 해당 토큰을 이용하여 github 계정 정보를 불러옵니다.
+
+그 후 github 계정 정보를 이용하여 User 객체를 생성하여 FE 서버에 보내줍니다.
+
+```
+class GithubLogin_callback(APIView):
+    def post(self, request):
+        code = request.data['code']
+        token_req = requests.post(
+        f"https://github.com/login/oauth/access_token?client_id={CLIENT_ID}&client_secret={CLIENT_SECRET}&code={code}&accept=&json&redirect_uri={redirect_uri}&response_type=code", headers={'Accept': 'application/json'})
+        
+        token_req_json = token_req.json()
+        access_token = token_req_json.get('access_token')
+        user_req = requests.get(f"https://api.github.com/user",headers={"Authorization": f"Bearer {access_token}"})
+        user_json = user_req.json()
+        
+        ... 생략 ...
+```
+
+### FE <-> BE 데이터 통신
+
+Database에서 전달 받은 객체를 넘기기는 부분에서 오류가 자주 발생하였고 , Json 형식과 dict 형식이 비슷하지만 완전히 같지는 않아 호환되지않는 점으로 인해 많은 오류가 발생하였습니다.
+
+위의 2가지가 빈번히 발생하여 이번 프로젝트를 진행하면서 아주 힘들었습니다.
+
+1.  Database에서 전달 받은 객체를 넘기기는 부분
+    ```
+    if serializer.is_valid():
+        user = serializer.save(request)
+
+        token = RefreshToken.for_user(user)
+        refresh = str(token)
+        access = str(token.access_token)
+        data = {
+            'user': user,
+            'access': access,
+            'refresh': refresh 
+        }
+        return Response(data=data,status=status.HTTP_200_OK)
+    ```
+    - Error 구문
+    ```
+    Internal Server Error
+    TypeError: Object of type User is not JSON serializable
+    ```
+    - Error 발생 이유
+    ```
+    user = serializer.save(request) 
+    # 해당 구문의 데이터 타입이 QuerySet 이라서 발생하였습니다.
+    # 쿼리셋은 Django ORM에서 제공하는 데이터 타입입니다.
+    ```
+    - Error를 해결한 Code
+    ```
+    if serializer.is_valid(raise_exception=False):
+        user = serializer.save(request)
+
+        token = RefreshToken.for_user(user)
+        refresh = str(token)
+        access = str(token.access_token)
+
+        user_dict  = user.__dict__ 
+        # QuerySet를 dict으로 형변환 후 넘겨주었습니다.
+        user_dict['_state'] = user_dict['_state'].__dict__
+        # 위와 같은 이유로 dict으로 형변환 하였습니다.
+
+        data = {
+            'user': user_dict,
+            'access': access,
+            'refresh': refresh 
+        }
+
+        return Response(data=data,status=status.HTTP_200_OK)
+    ```
+2.  json.loads() 에러
+    ```
+    questions = {
+        "role": "user",
+        "content": request.data,
+    }
+        
+    prompt.append(questions)
+    
+    ## conncet gpt api start
+    response = requests.post('https://estsoft-openai-api.jejucodingcamp.workers.dev/', json=prompt)
+    ai_anwser = response.json()['choices'][0]['message']['content']
+    ## end
+    
+    gpt_anwser = json.loads(ai_anwser)
+    ```
+    - Error 구문
+    ```
+    json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+    ```
+    - Error 발생 이유
+    ```
+    ai_anwser = response.json()['choices'][0]['message']['content']
+    # 해당 데이터는 str 형식이였습니다.
+    # EX) ai_anwser = "{'key': 'value'}"
+    # Json으로 load할 데이터가 위 처럼 '(홑따옴표)로 되어있어서 해당 오류가 발생하였습니다.
+    ```
+    - Error를 해결한 Code
+    ```
+    remake = ai_anwser.replace("'",'"')
+    # 간단히 '(홑따옴표)를 "(겹따옴표)로 변경해주어 에러를 해결하였습니다.
+    gpt_anwser = json.loads(remake)
+    ```
+3.  CORS
+    ```
+    Access to fetch at 'http://127.0.0.1:8000/user/login/' from origin 'http://127.0.0.1:5500' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+    ```
+    이 문제는 `django-cors-headers`를 이용하여 쉽게 해결하였습니다.
+
+    ```
+    settings.py
+
+    INSTALLED_APPS = [
+        'corsheaders',
+    ]
+
+    MIDDLEWARE = [
+        'corsheaders.middleware.CorsMiddleware',
+    ]
+
+    CORS_ALLOWED_ORIGINS = [
+        # 허용할 Origin 추가
+        "http://127.0.0.1:5500"
+    ] # 화이트리스트 추가 입니다.
+
+    # CORS_ORIGIN_ALLOW_ALL = True # 모두 허용
+    ```
+4.  FE에서 header를 잘못 설정한 경우
+
+    ```
+    const api_login = async (event) => {
+        event.preventDefault()
+        ... 생략 ...
+
+        await fetch(url, {
+            method: "POST",
+            headers: {
+            "Content-Type": "multipart/form-data;
+        },
+            body: formData,
+        })
+
+        ... 생략 ...
+    }
+    ```
+    - Error 구문
+    ![스크린샷 2023-07-26 141613](https://github.com/Hyunwooz/DjangoGptProject_BE/assets/107661525/b37fe10d-3bbc-4def-81b9-e61f2c3ffee5)
+    ![스크린샷 2023-07-26 141532](https://github.com/Hyunwooz/DjangoGptProject_BE/assets/107661525/3f8470fa-e172-4e8e-aa71-a205a2b7623e)
+    ![스크린샷 2023-07-26 141549](https://github.com/Hyunwooz/DjangoGptProject_BE/assets/107661525/71e0c70f-8c7c-423d-acbc-1bb023a548eb)
+    ![스크린샷 2023-07-26 141606](https://github.com/Hyunwooz/DjangoGptProject_BE/assets/107661525/545b05cb-6030-4a2c-80fc-fa7c591dfa22)
+    ```
+    POST http://127.0.0.1:8000/user/login/ 400 (Bad Request)
+
+    network response
+    {"detail":"JSON parse error - Expecting value: line 1 column 2 (char 1)"}
+    ```
+    - Error 발생 이유
+    ```
+    Client 쪽에서 잘못된 형식으로 Server로 Data를 전달했기에 발생한 문제.
+    ```
+    - Error를 해결한 Code
+    ```
+    formData를 보낼때, header 부분은 브라우저가 자동으로 설정해주기 때문에 Content-Type을 따로 지정할 필요가 없었습니다.
+
+    해당 Error는 2가지 해결방법이 존재했습니다.
+
+    1. header에 Content-Type을 따로 지정하지 않고 통신
+    2. "Content-Type": "multipart/form-data; boundary=boundary;"
+        - 항목과 항목을 구분하는 구분자 사용하기.
+
+    const api_login = async (event) => {
+        event.preventDefault()
+        ... 생략 ...
+
+        await fetch(url, {
+            method: "POST",
+            headers: {
+        },
+            body: formData,
+        })
+
+        ... 생략 ...
+    }
+    ```
+5.  CORS 정책 위반 문제인줄 알았지만 전혀 다른 부분이였던 ERROR
+    - FE Console 창 Error 구문
+    ```
+    has been blocked by cors policy: no 'access-control-allow-origin' header is present on the requested resource.
+    ```
+    - BE /var/log/syslog
+    ```
+    Aug  2 06:40:26 ip-172-26-6-254 uwsgi[22993]:   File "/home/ubuntu/DjangoGptProject_BE/./user/views.py", line 23
+    Aug  2 06:40:26 ip-172-26-6-254 uwsgi[22993]:     return JsonResponse(data)
+    Aug  2 06:40:26 ip-172-26-6-254 uwsgi[22993]:                              ^
+    Aug  2 06:40:26 ip-172-26-6-254 uwsgi[22993]: IndentationError: unindent does not match any outer indentation level
+    ```
+    - Error 발생 이유
+    ```
+    알고보니 Django의 User/veiws.py에서 들여쓰기가 잘못되어있었습니다.
+    CORS 정책에만 매몰되어 해결방법을 찾다가 /var/log/syslog를 확인하여 해결하였습니다.
+    ```
 
 ### 마치며
 
+Django Rest Framework에 대해서 많은 공부를 하게 되었으며,
+데이터를 주고받을때 주는 환경과 받는 환경의 차이가 있다는 걸 고려해야 한다는 것을 깨달았습니다.
+
+Front-End와 Back-End가 유기적인 의사소통이 필요하다는 것을 많이 느꼈습니다.
+
+이번 프로젝트는 예외 처리 부분에서 큰 아쉬움을 느끼고 있지만, 다음번 프로젝트를 진행할 때는 예외처리에 대해 좀 더 공부해서 탄탄한 Django 프로젝트들을 진행해보고 싶습니다.
+
+더욱 발전한 개발자로 돌아오도록 하겠습니다.
+
+끝까지 읽어주신 모든 분들 감사합니다 :)
