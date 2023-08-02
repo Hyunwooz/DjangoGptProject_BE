@@ -7,11 +7,11 @@ from .models import Answer, Comment
 import requests
 import json
 
-# from .serializers import UserSerializer, LoginSerializer
-
 User = get_user_model()
 
 class Chat(APIView):
+    throttle_scope = 'chatbot'
+    
     def post(self, request):
         user = User.objects.get(email=request.user)
         req_data = json.loads(request.data)
@@ -42,11 +42,8 @@ class Chat(APIView):
             type=gpt_anwser["ad_type"],
             question=req_data)
         
-        answer_dict = answer.__dict__
-        answer_dict['_state'] = ""
-        
         data = {
-                'message': answer_dict
+                'message': 'Success'
             }
         
         return JsonResponse(data)
