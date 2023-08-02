@@ -54,7 +54,33 @@
 ### 3.1 Entity Relationship Diagram
 ![ERD](https://github.com/Hyunwooz/DjangoGptProject_FE/assets/107661525/9bfbf5e4-5c88-4ba1-bda7-023454420c61)
 
-### 3.2 프로젝트 구조
+### 3.2 URL 설계
+
+|이름|URL|비고|
+|------|---|---|
+|User|||
+|로그인|user/join/||
+|회원가입|user/login/||
+|프로필|user/profile/||
+|깃헙 로그인|user/login/github/||
+|깃헙 로그인 콜백|user/login/github/callback/|||
+|Token|||
+|token|user/token/||
+|refresh|user/token/refresh/||
+|verify|user/token/verify/||
+|Chatbot|||
+|마이페이지|Chatbot/mylist/||
+|라운지|Chatbot/lounge/||
+|디테일 뷰|Chatbot/detail/||
+|카피 삭제|Chatbot/delete/||
+|공개 설정|Chatbot/public/||
+|비공개 설정|Chatbot/private/||
+|댓글 작성|Chatbot/comment/write/||
+|댓글 삭제|Chatbot/comment/delete/||
+|검색|Chatbot/search/||
+|좋아요|Chatbot/like/||
+
+### 3.3 프로젝트 구조
 ```
 Django-blog
 │
@@ -72,7 +98,7 @@ Django-blog
 |   \---user
 \---venv
 ```
-### 3.3 개발 일정
+### 3.4 개발 일정
 
 #### 개발 일정
 
