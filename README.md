@@ -82,7 +82,7 @@
 
 ### 3.3 프로젝트 구조
 ```
-Django-blog
+DjangoGptProject
 │
 |   .gitignore
 |   README.md
