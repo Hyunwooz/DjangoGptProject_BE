@@ -11,8 +11,12 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import dotenv
 import os
 from datetime import timedelta
+
+dotenv_file = dotenv.find_dotenv()
+dotenv.load_dotenv(dotenv_file)
 
 # Auth user
 AUTH_USER_MODEL = 'user.User'
@@ -24,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-d%^d75$)x306!a2=a$tixjdx#!kh1ug#1$f08&kc4--)0a1+bu'
+SECRET_KEY = os.environ['DJAGNO_SECRET']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False

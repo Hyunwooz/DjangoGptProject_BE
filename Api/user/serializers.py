@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta(object):
@@ -54,7 +55,7 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("존재하지 않는 이메일 입니다.")
         
         raise serializers.ValidationError('이메일 또는 비밀번호를 확인해주세요.')
-            
+
 
 class GithibLoginSerializer(serializers.Serializer):
     

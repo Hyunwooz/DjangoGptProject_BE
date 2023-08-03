@@ -9,6 +9,7 @@ import json
 
 User = get_user_model()
 
+
 class Chat(APIView):
     throttle_scope = 'chatbot'
     
@@ -16,7 +17,6 @@ class Chat(APIView):
         user = User.objects.get(email=request.user)
         req_data = json.loads(request.data)
 
-        
         questions = {
             "role": "user",
             "content": request.data,
@@ -83,7 +83,7 @@ class MyChatList(APIView):
             "data": anwsers
         }
         return JsonResponse(datas)
-    
+
 
 class ChatDetail(APIView):
     def post(self, request):
@@ -102,7 +102,6 @@ class ChatDetail(APIView):
             owner_dict['_state'] = ''
             comment['owner'] = owner_dict
             r_comments.append(comment)
-        
         
         writer = anwser.writer
         profile = writer.profile
@@ -123,6 +122,7 @@ class ChatDetail(APIView):
         }
         return JsonResponse(datas)
 
+
 class ChatDelete(APIView):
     def post(self, request):
         chat = Answer.objects.get(id=request.data)
@@ -133,7 +133,7 @@ class ChatDelete(APIView):
             "message": "삭제되었습니다.",
         }
         return JsonResponse(datas)
-    
+
 
 class ChatPublic(APIView):
     def post(self, request):
@@ -157,7 +157,7 @@ class ChatPrivate(APIView):
             "message": "Private 설정 완료.",
         }
         return JsonResponse(datas)
-    
+
 
 class CommentWrite(APIView):
     def post(self, request):
@@ -170,7 +170,7 @@ class CommentWrite(APIView):
             "message": "댓글 생성 완료",
         }
         return JsonResponse(datas)
-    
+
 
 class CommentDelete(APIView):
     def post(self, request):
@@ -182,8 +182,8 @@ class CommentDelete(APIView):
             "message": "삭제되었습니다.",
         }
         return JsonResponse(datas)
-    
-    
+
+
 class Search(APIView):
     def post(self, request):
         
@@ -212,7 +212,7 @@ class Search(APIView):
             "categories": categories
         }
         return JsonResponse(datas)
-    
+
 
 class Like(APIView):
     def post(self, request):

@@ -6,16 +6,21 @@ from django.contrib.auth import get_user_model
 from .models import Profile as PF_Model
 from .serializers import UserSerializer, LoginSerializer, GithibLoginSerializer
 import requests
+import dotenv
+import os
+
+dotenv_file = dotenv.find_dotenv()
+dotenv.load_dotenv(dotenv_file)
 
 User = get_user_model()
 
-CLIENT_ID = '3a029223a08dd902d643'
-CLIENT_SECRET = '47db3bedb554bbf7d9e7a55167be6acb33c416e3'
+CLIENT_ID = os.environ['CLIENT_ID']
+CLIENT_SECRET = os.environ['CLIENT_SECRET']
 redirect_uri = "http://127.0.0.1:5500/src/view/login.html"
+
 
 class GithubLogin(APIView):
     def post(self, request):
-        
         data = {
             'url': f"https://github.com/login/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={redirect_uri}"
         }
@@ -34,9 +39,6 @@ class GithubLogin_callback(APIView):
         user_req = requests.get(f"https://api.github.com/user",headers={"Authorization": f"Bearer {access_token}"})
         user_json = user_req.json()
         
-        #  '@github.com'
-        
-        # email = user_json.get("login")
         name = user_json.get("name")
         login = user_json.get("login")
         email = login + '@github.com'

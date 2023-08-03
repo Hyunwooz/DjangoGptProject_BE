@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 
+
 class UserManager(BaseUserManager):
     
     def _create_user(self, email, password, is_staff, is_superuser, **extra_fields):
