@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from django.http import JsonResponse 
 from django.contrib.auth import get_user_model
 from django.db.models import Count
@@ -12,9 +13,11 @@ User = get_user_model()
 
 class Chat(APIView):
     throttle_scope = 'chatbot'
+    permission_classes = [IsAuthenticated,]
     
     def post(self, request):
-        user = User.objects.get(email=request.user)
+        
+        user = request.user
         req_data = json.loads(request.data)
 
         questions = {
@@ -75,8 +78,10 @@ class LoungeChatList(APIView):
 
 
 class MyChatList(APIView):
+    permission_classes = [IsAuthenticated,]
+    
     def post(self, request):
-        user = User.objects.get(email=request.user)
+        user = request.user
         anwsers = list(Answer.objects.filter(writer=user,is_active=True).order_by('-created_at').values())
         
         datas = {
@@ -160,9 +165,10 @@ class ChatPrivate(APIView):
 
 
 class CommentWrite(APIView):
+    permission_classes = [IsAuthenticated,]
+    
     def post(self, request):
-        
-        user = User.objects.get(email=request.user)
+        user = request.user
         chat = Answer.objects.get(id=request.data['post_id'])
         comment = Comment.objects.create(writer=user,content=request.data['comment'],chat=chat)
         
@@ -215,6 +221,7 @@ class Search(APIView):
 
 
 class Like(APIView):
+    
     def post(self, request):
 
         chat = Answer.objects.get(id=request.data)
