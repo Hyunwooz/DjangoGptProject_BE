@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>chatbot.views &mdash; woo  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            woo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">woo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">chatbot.views</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for chatbot.views</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">rest_framework.views</span> <span class="kn">import</span> <span class="n">APIView</span>
+<span class="kn">from</span> <span class="nn">rest_framework.permissions</span> <span class="kn">import</span> <span class="n">IsAuthenticated</span>
+<span class="kn">from</span> <span class="nn">django.http</span> <span class="kn">import</span> <span class="n">JsonResponse</span> 
+<span class="kn">from</span> <span class="nn">django.contrib.auth</span> <span class="kn">import</span> <span class="n">get_user_model</span>
+<span class="kn">from</span> <span class="nn">django.db.models</span> <span class="kn">import</span> <span class="n">Count</span>
+<span class="kn">from</span> <span class="nn">.data</span> <span class="kn">import</span> <span class="n">data</span> <span class="k">as</span> <span class="n">prompt</span>
+<span class="kn">from</span> <span class="nn">.models</span> <span class="kn">import</span> <span class="n">Answer</span><span class="p">,</span> <span class="n">Comment</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="n">User</span> <span class="o">=</span> <span class="n">get_user_model</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Chat"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.Chat">[docs]</a><span class="k">class</span> <span class="nc">Chat</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+    <span class="n">throttle_scope</span> <span class="o">=</span> <span class="s1">&#39;chatbot&#39;</span>
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsAuthenticated</span><span class="p">,]</span>
+    
+<div class="viewcode-block" id="Chat.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.Chat.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        
+        <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span>
+        <span class="n">req_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">questions</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+        <span class="p">}</span>
+        
+        <span class="n">prompt</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">questions</span><span class="p">)</span>
+        
+        <span class="c1">## conncet gpt api start</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;https://estsoft-openai-api.jejucodingcamp.workers.dev/&#39;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">prompt</span><span class="p">)</span>
+        <span class="n">ai_anwser</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;choices&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;message&#39;</span><span class="p">][</span><span class="s1">&#39;content&#39;</span><span class="p">]</span>
+        <span class="c1">## end</span>
+        
+        <span class="n">remake</span> <span class="o">=</span> <span class="n">ai_anwser</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+        <span class="n">gpt_anwser</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">remake</span><span class="p">)</span>
+
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">writer</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">gpt_anwser</span><span class="p">[</span><span class="s2">&quot;ad_title&quot;</span><span class="p">],</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">gpt_anwser</span><span class="p">[</span><span class="s2">&quot;ad_description&quot;</span><span class="p">],</span>
+            <span class="n">main_keyword</span><span class="o">=</span><span class="n">gpt_anwser</span><span class="p">[</span><span class="s2">&quot;ad_Main_keyword&quot;</span><span class="p">],</span>
+            <span class="n">recommand_keyword</span><span class="o">=</span><span class="n">gpt_anwser</span><span class="p">[</span><span class="s2">&quot;ad_keyword&quot;</span><span class="p">],</span>
+            <span class="n">category</span><span class="o">=</span><span class="n">gpt_anwser</span><span class="p">[</span><span class="s2">&quot;ad_category&quot;</span><span class="p">],</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">gpt_anwser</span><span class="p">[</span><span class="s2">&quot;ad_type&quot;</span><span class="p">],</span>
+            <span class="n">question</span><span class="o">=</span><span class="n">req_data</span><span class="p">)</span>
+        
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;Success&#39;</span>
+            <span class="p">}</span>
+        
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="LoungeChatList"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.LoungeChatList">[docs]</a><span class="k">class</span> <span class="nc">LoungeChatList</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<div class="viewcode-block" id="LoungeChatList.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.LoungeChatList.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">anwsers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">is_public</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;created_at&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">categories</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">is_public</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="n">Count</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)))</span>
+        
+        <span class="n">profile_add</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">ans</span> <span class="ow">in</span> <span class="n">anwsers</span><span class="p">:</span>
+            <span class="n">owner</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">ans</span><span class="p">[</span><span class="s1">&#39;writer_id&#39;</span><span class="p">])</span>
+            <span class="n">owner_profile</span> <span class="o">=</span> <span class="n">owner</span><span class="o">.</span><span class="n">profile</span>
+            <span class="n">owner_dict</span> <span class="o">=</span> <span class="n">owner_profile</span><span class="o">.</span><span class="vm">__dict__</span>
+            <span class="n">owner_dict</span><span class="p">[</span><span class="s1">&#39;_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="n">ans</span><span class="p">[</span><span class="s1">&#39;owner&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">owner_dict</span>
+            <span class="n">profile_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ans</span><span class="p">)</span>
+            
+        <span class="n">recents</span> <span class="o">=</span> <span class="n">anwsers</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">profile_add</span><span class="p">,</span>
+            <span class="s2">&quot;recents&quot;</span><span class="p">:</span> <span class="n">recents</span><span class="p">,</span>
+            <span class="s2">&quot;categories&quot;</span><span class="p">:</span> <span class="n">categories</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="MyChatList"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.MyChatList">[docs]</a><span class="k">class</span> <span class="nc">MyChatList</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsAuthenticated</span><span class="p">,]</span>
+    
+<div class="viewcode-block" id="MyChatList.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.MyChatList.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span>
+        <span class="n">anwsers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">writer</span><span class="o">=</span><span class="n">user</span><span class="p">,</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;-created_at&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">anwsers</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ChatDetail"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.ChatDetail">[docs]</a><span class="k">class</span> <span class="nc">ChatDetail</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<div class="viewcode-block" id="ChatDetail.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.ChatDetail.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+            
+        <span class="n">anwser</span> <span class="o">=</span> <span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">anwser</span><span class="o">.</span><span class="n">views</span> <span class="o">=</span> <span class="n">anwser</span><span class="o">.</span><span class="n">views</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">anwser</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="n">comments</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Comment</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">chat</span><span class="o">=</span><span class="n">anwser</span><span class="p">,</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">r_comments</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">comments</span><span class="p">:</span>
+            <span class="n">owner</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">comment</span><span class="p">[</span><span class="s1">&#39;writer_id&#39;</span><span class="p">])</span>
+            <span class="n">owner_profile</span> <span class="o">=</span> <span class="n">owner</span><span class="o">.</span><span class="n">profile</span>
+            <span class="n">owner_dict</span> <span class="o">=</span> <span class="n">owner_profile</span><span class="o">.</span><span class="vm">__dict__</span>
+            <span class="n">owner_dict</span><span class="p">[</span><span class="s1">&#39;_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="n">comment</span><span class="p">[</span><span class="s1">&#39;owner&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">owner_dict</span>
+            <span class="n">r_comments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+        
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">anwser</span><span class="o">.</span><span class="n">writer</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="n">profile</span>
+        
+        <span class="n">r_answer</span> <span class="o">=</span> <span class="n">anwser</span><span class="o">.</span><span class="vm">__dict__</span>
+        <span class="n">r_answer</span><span class="p">[</span><span class="s1">&#39;_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">r_writer</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="vm">__dict__</span>
+        <span class="n">r_writer</span><span class="p">[</span><span class="s1">&#39;_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">r_writer</span><span class="p">[</span><span class="s1">&#39;password&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;sercret&#39;</span>
+        <span class="n">r_profile</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="vm">__dict__</span>
+        <span class="n">r_profile</span><span class="p">[</span><span class="s1">&#39;_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;anwser&quot;</span><span class="p">:</span> <span class="n">r_answer</span><span class="p">,</span>
+            <span class="s2">&quot;writer&quot;</span><span class="p">:</span> <span class="n">r_writer</span><span class="p">,</span>
+            <span class="s2">&quot;profile&quot;</span><span class="p">:</span> <span class="n">r_profile</span><span class="p">,</span>
+            <span class="s2">&quot;comments&quot;</span><span class="p">:</span> <span class="n">r_comments</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ChatDelete"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.ChatDelete">[docs]</a><span class="k">class</span> <span class="nc">ChatDelete</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<div class="viewcode-block" id="ChatDelete.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.ChatDelete.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">chat</span><span class="o">.</span><span class="n">is_active</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">chat</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;삭제되었습니다.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ChatPublic"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.ChatPublic">[docs]</a><span class="k">class</span> <span class="nc">ChatPublic</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<div class="viewcode-block" id="ChatPublic.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.ChatPublic.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">chat</span><span class="o">.</span><span class="n">is_public</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">chat</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Public 설정 완료.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+    
+    
+<div class="viewcode-block" id="ChatPrivate"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.ChatPrivate">[docs]</a><span class="k">class</span> <span class="nc">ChatPrivate</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<div class="viewcode-block" id="ChatPrivate.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.ChatPrivate.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">chat</span><span class="o">.</span><span class="n">is_public</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">chat</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Private 설정 완료.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CommentWrite"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.CommentWrite">[docs]</a><span class="k">class</span> <span class="nc">CommentWrite</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+    <span class="n">permission_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">IsAuthenticated</span><span class="p">,]</span>
+    
+<div class="viewcode-block" id="CommentWrite.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.CommentWrite.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;post_id&#39;</span><span class="p">])</span>
+        <span class="n">comment</span> <span class="o">=</span> <span class="n">Comment</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">writer</span><span class="o">=</span><span class="n">user</span><span class="p">,</span><span class="n">content</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;comment&#39;</span><span class="p">],</span><span class="n">chat</span><span class="o">=</span><span class="n">chat</span><span class="p">)</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;댓글 생성 완료&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="CommentDelete"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.CommentDelete">[docs]</a><span class="k">class</span> <span class="nc">CommentDelete</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<div class="viewcode-block" id="CommentDelete.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.CommentDelete.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        <span class="n">comment</span> <span class="o">=</span> <span class="n">Comment</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">comment</span><span class="o">.</span><span class="n">is_active</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">comment</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;삭제되었습니다.&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Search"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.Search">[docs]</a><span class="k">class</span> <span class="nc">Search</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+<div class="viewcode-block" id="Search.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.Search.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;category&#39;</span><span class="p">:</span>
+            <span class="n">anwsers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;search&#39;</span><span class="p">],</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">is_public</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;created_at&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">elif</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;title&#39;</span><span class="p">:</span>
+            <span class="n">anwsers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">title__contains</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;search&#39;</span><span class="p">],</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">is_public</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;created_at&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="n">categories</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">is_active</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">is_public</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">annotate</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="n">Count</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)))</span>
+        
+        <span class="n">profile_add</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">ans</span> <span class="ow">in</span> <span class="n">anwsers</span><span class="p">:</span>
+            <span class="n">owner</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">ans</span><span class="p">[</span><span class="s1">&#39;writer_id&#39;</span><span class="p">])</span>
+            <span class="n">owner_profile</span> <span class="o">=</span> <span class="n">owner</span><span class="o">.</span><span class="n">profile</span>
+            <span class="n">owner_dict</span> <span class="o">=</span> <span class="n">owner_profile</span><span class="o">.</span><span class="vm">__dict__</span>
+            <span class="n">owner_dict</span><span class="p">[</span><span class="s1">&#39;_state&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="n">ans</span><span class="p">[</span><span class="s1">&#39;owner&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">owner_dict</span>
+            <span class="n">profile_add</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ans</span><span class="p">)</span>
+            
+        <span class="n">recents</span> <span class="o">=</span> <span class="n">anwsers</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>
+        
+        <span class="n">datas</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">profile_add</span><span class="p">,</span>
+            <span class="s2">&quot;recents&quot;</span><span class="p">:</span> <span class="n">recents</span><span class="p">,</span>
+            <span class="s2">&quot;categories&quot;</span><span class="p">:</span> <span class="n">categories</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">datas</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Like"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.Like">[docs]</a><span class="k">class</span> <span class="nc">Like</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+    
+<div class="viewcode-block" id="Like.post"><a class="viewcode-back" href="../../source/chatbot.html#chatbot.views.Like.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">Answer</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">email</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">chat</span><span class="o">.</span><span class="n">like</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">chat</span><span class="o">.</span><span class="n">like</span><span class="p">[</span><span class="n">user</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;like&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span>   <span class="n">chat</span><span class="o">.</span><span class="n">like</span><span class="p">[</span><span class="n">user</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;like&#39;</span><span class="p">:</span>
+                <span class="n">chat</span><span class="o">.</span><span class="n">like</span><span class="p">[</span><span class="n">user</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;unlike&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">chat</span><span class="o">.</span><span class="n">like</span><span class="p">[</span><span class="n">user</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;like&#39;</span>
+        
+        <span class="n">chat</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;message&#39;</span><span class="p">:</span> <span class="s1">&#39;success&#39;</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, woo.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
