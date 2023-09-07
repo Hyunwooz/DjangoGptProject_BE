@@ -1,6 +1,6 @@
-# Django ChatGPT Project Back-End
+# AgAs (Automatically generate advertising scripts)
 
--   Django ChatGPT Project Back-End Repo 입니다.
+![Agas](https://github.com/Hyunwooz/DjangoGptProject_BE/assets/107661525/db450707-8bb6-4d45-915e-825e2fac0365)
 
 ## 1. 목표 및 기능
 
@@ -29,7 +29,7 @@
 -   광고 카피 조회수 기능
 -   맘에드는 광고 카피 좋아요
     ```
-    GTP를 통해 만든 광고 카피를 공유할 수 있는 장소와 기능을 제공하고 있습니다.
+    ChatGTP를 통해 만든 광고 카피를 공유할 수 있는 장소와 기능을 제공하고 있습니다.
     특정 광고 카피 디테일 뷰에 들어가게 되면 조회수가 올라갑니다.    
     마음에 드는 광고 카피에 좋아요를 남길 수도 있습니다.
     ```
