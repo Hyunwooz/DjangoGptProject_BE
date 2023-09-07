@@ -66,7 +66,7 @@
 ### 2.2 배포 URL
 
 #### Back-End
--   http://43.200.64.24/
+-   ~~http://43.200.64.24/~~ 현재 배포 되고 있지 않습니다.
 -   Back-End Repo : https://github.com/Hyunwooz/DjangoGptProject_BE
 #### Front-End
 -   http://www.kanghyunwoo.com/
